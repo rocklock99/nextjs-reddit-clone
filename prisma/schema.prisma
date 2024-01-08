@@ -1,0 +1,55 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id         String      @id @default(uuid())
+  username   String      @unique
+  password   String
+  subreddits Subreddit[]
+  posts      Post[]
+  votes      Vote[]
+}
+
+model Post {
+  id          String    @id @default(uuid())
+  title       String
+  message     String?
+  userId      String
+  subredditId String
+  createdAt   DateTime  @default(now())
+  parentId    String?
+  votes       Vote[]
+  children    Post[]    @relation("ParentChildRelation")
+  parent      Post?     @relation("ParentChildRelation", fields: [parentId], references: [id], onDelete: Cascade)
+  subreddit   Subreddit @relation(fields: [subredditId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Subreddit {
+  id     String @id @default(uuid())
+  name   String @unique
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+  posts  Post[]
+}
+
+model Vote {
+  id       String  @id @default(uuid())
+  userId   String
+  postId   String
+  isUpvote Boolean
+  user     User    @relation(fields: [userId], references: [id])
+  post     Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+}
